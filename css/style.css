@@ -1,6 +1,7 @@
+
 /* Treino do Dia — estilos
-   Identidade mantida: fundo escuro, destaque amarelo. Sem transição global:
-   animações só nos elementos que precisam. */
+   Identidade visual: preto e rosa.
+   Animações só nos elementos que precisam. */
 
 :root {
     --fundo: #121212;
@@ -9,7 +10,7 @@
     --borda: #444;
     --texto: #f2f2f2;
     --sutil: #9a9a9a;
-    --destaque: #ffcc00;
+    --destaque: #E879A9;
     --ok: #2ecc71;
     --aviso: #f0a500;
     --erro: #ff4444;
@@ -33,6 +34,7 @@ body {
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     -webkit-text-size-adjust: 100%;
 }
+
 body.centralizado { justify-content: center; }
 body.carregando main { visibility: hidden; }
 body.sem-selecao { user-select: none; -webkit-user-select: none; }
@@ -49,6 +51,7 @@ button { cursor: pointer; }
 
 /* ---------- formulários ---------- */
 .campo { display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem; color: var(--sutil); font-weight: 600; }
+
 .campo input, .campo select, .input-carga {
     width: 100%;
     background: #000;
@@ -56,8 +59,9 @@ button { cursor: pointer; }
     border: 1px solid var(--borda);
     border-radius: 8px;
     padding: 12px;
-    font-size: 1rem; /* 16px evita o zoom automático do iPhone */
+    font-size: 1rem;
 }
+
 .campo input:focus, .campo select:focus { border-color: var(--destaque); outline: none; }
 .campo select { color: var(--destaque); }
 .marcar { display: flex; gap: 10px; align-items: center; font-size: 0.9rem; }
@@ -66,7 +70,10 @@ button { cursor: pointer; }
 .caixa { background: var(--painel); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
 .grade-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .grade-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-@media (max-width: 420px) { .grade-2 { grid-template-columns: 1fr; } }
+
+@media (max-width: 420px) {
+    .grade-2 { grid-template-columns: 1fr; }
+}
 
 /* ---------- botões ---------- */
 .btn-principal, .btn-verde, .btn-perigo, .btn-mini, .btn-sair {
@@ -76,6 +83,7 @@ button { cursor: pointer; }
     padding: 12px 16px;
     transition: opacity 0.15s;
 }
+
 .btn-principal { background: var(--destaque); color: #000; }
 .btn-verde { background: var(--ok); color: #000; }
 .btn-perigo { background: transparent; color: var(--erro); border: 1px solid var(--erro); }
@@ -87,14 +95,33 @@ button:not(:disabled):hover { opacity: 0.85; }
 /* ---------- login ---------- */
 .login-wrap { width: 100%; max-width: 380px; padding: 20px; }
 .marca { text-align: center; color: var(--destaque); font-size: 1.9rem; margin-bottom: 22px; }
-.login-box { background: var(--painel); border-radius: 12px; padding: 26px; display: flex; flex-direction: column; gap: 18px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+
+.login-box {
+    background: var(--painel);
+    border-radius: 12px;
+    padding: 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
 
 /* ---------- aluno: cabeçalho ---------- */
 .container-aluno { width: 100%; max-width: 500px; padding: 20px; }
 .header-aluno { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 24px; }
 .perfil-info { display: flex; align-items: center; gap: 14px; min-width: 0; }
 .foto-perfil { background: none; border: none; padding: 0; border-radius: 50%; flex-shrink: 0; }
-.foto-perfil img { display: block; width: 70px; height: 70px; border-radius: 50%; border: 3px solid var(--destaque); object-fit: cover; box-shadow: 0 0 15px rgba(255, 204, 0, 0.2); }
+
+.foto-perfil img {
+    display: block;
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    border: 3px solid var(--destaque);
+    object-fit: cover;
+    box-shadow: 0 0 15px rgba(232, 121, 169, 0.3);
+}
+
 .texto-boas-vindas { min-width: 0; }
 .texto-boas-vindas h2 { margin: 0; font-size: 1.35rem; color: var(--destaque); overflow-wrap: anywhere; }
 .frase-motivacional { font-size: 0.8rem; color: #aaa; margin-top: 4px; font-style: italic; }
@@ -115,6 +142,7 @@ button:not(:disabled):hover { opacity: 0.85; }
     font-weight: 700;
     box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
+
 .cronometro-inline.visible { display: flex; }
 .cronometro-inline.terminou { background: var(--ok); }
 .btn-parar { background: rgba(0,0,0,0.15); border: none; border-radius: 6px; color: #000; font-weight: 700; padding: 4px 9px; }
