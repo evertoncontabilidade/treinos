@@ -3,8 +3,10 @@ import { exigirPapel, sair } from './auth.js';
 import { h, $, limpar, toast, hojeLocal, formatarDiaMes, idYoutube } from './ui.js';
 import { gravarExecucao, sincronizar, pendentes, execucoesPendentes } from './fila.js';
 import { criarTimer } from './timer.js';
+import { fotoParaPerfil } from './imagem.js';
 import './pwa.js';
 
+const AVATAR_PADRAO = 'icons/avatar.svg';
 const CORES = { Peito: '#ff6b6b', Costas: '#4dabf7', Pernas: '#51cf66', Ombros: '#fcc419', 'Braços': '#cc5de8', Core: '#ff922b' };
 
 let ctx = null;          // { user, perfil }
@@ -83,16 +85,22 @@ document.addEventListener('visibilitychange', () => {
 function pintarPerfil(perfil) {
   $('#nome-aluno').textContent = perfil.nome;
   $('#frase-aluno').textContent = perfil.frase || '';
-  if (perfil.foto_url) $('#foto-aluno').src = perfil.foto_url;
+  $('#foto-aluno').src = perfil.foto_url || AVATAR_PADRAO;
 }
-async function trocarFoto() {
-  const url = prompt('Cole o link (https://...) da sua nova foto:');
-  if (!url) return;
-  if (!/^https:\/\//i.test(url.trim())) return toast('O link precisa começar com https://', 'erro');
-  const { error } = await supabase.from('perfis').update({ foto_url: url.trim() }).eq('id', ctx.user.id);
-  if (error) return toast('Não foi possível trocar a foto.', 'erro');
-  $('#foto-aluno').src = url.trim();
-  toast('Foto atualizada.', 'ok');
+async function aoEscolherFoto(e) {
+  const arquivo = e.target.files[0];
+  e.target.value = ''; // permite escolher a mesma foto outra vez
+  if (!arquivo) return;
+  try {
+    toast('Preparando a foto…', 'info');
+    const dataUrl = await fotoParaPerfil(arquivo);
+    const { error } = await supabase.from('perfis').update({ foto_url: dataUrl }).eq('id', ctx.user.id);
+    if (error) throw error;
+    $('#foto-aluno').src = dataUrl;
+    toast('Foto atualizada.', 'ok');
+  } catch (erro) {
+    toast(erro.message || 'Não foi possível trocar a foto.', 'erro');
+  }
 }
 
 // ---------- fichas (A, B, C...) ----------
@@ -324,7 +332,12 @@ async function iniciar() {
   if (!ctx) return;
   document.body.classList.remove('carregando');
   pintarPerfil(ctx.perfil);
-  $('#foto-aluno').closest('.foto-perfil').addEventListener('click', trocarFoto);
+  $('#foto-aluno').closest('.foto-perfil').addEventListener('click', () => $('#input-foto').click());
+  $('#input-foto').addEventListener('change', aoEscolherFoto);
+  // Se uma foto antiga (link externo) sumir do ar, volta para o avatar local
+  $('#foto-aluno').addEventListener('error', (e) => {
+    if (!e.target.src.endsWith(AVATAR_PADRAO)) e.target.src = AVATAR_PADRAO;
+  });
   $('#btn-sair').addEventListener('click', sair);
   timer.retomar();
   atualizarStatus();
