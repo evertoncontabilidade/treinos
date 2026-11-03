@@ -4,7 +4,7 @@
 // - Chamadas ao Supabase (dados): nunca passam pelo cache. O app guarda o que precisa por conta própria.
 //
 // IMPORTANTE: a cada publicação nova, aumente o número em VERSAO para limpar o cache antigo.
-const VERSAO = 'v1';
+const VERSAO = 'v3-foto';
 const CACHE = `treino-do-dia-${VERSAO}`;
 
 const ARQUIVOS = [
@@ -23,9 +23,11 @@ const ARQUIVOS = [
   'js/timer.js',
   'js/fila.js',
   'js/ordenavel.js',
+  'js/imagem.js',
   'js/pwa.js',
   'icons/icon-192.png',
   'icons/icon-512.png',
+  'icons/avatar.svg',
   'icons/apple-touch-icon.png',
 ];
 
