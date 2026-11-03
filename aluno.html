@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#121212">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/png" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Treino">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="stylesheet" href="css/style.css">
+    <title>Treino do Dia</title>
+</head>
+<body class="carregando">
+    <main class="container-aluno">
+        <header class="header-aluno">
+            <div class="perfil-info">
+                <button type="button" class="foto-perfil" aria-label="Trocar foto do perfil">
+                    <img id="foto-aluno" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Sua foto">
+                </button>
+                <div class="texto-boas-vindas">
+                    <h2 id="nome-aluno">Carregando…</h2>
+                    <p id="frase-aluno" class="frase-motivacional"></p>
+                </div>
+            </div>
+            <button id="btn-sair" type="button" class="btn-sair">Sair</button>
+        </header>
+
+        <div id="cronometro" class="cronometro-inline" role="timer" aria-live="off">
+            <span aria-hidden="true">⏱️</span>
+            <span id="cronometro-tempo">00:00</span>
+            <button id="btn-parar-timer" type="button" class="btn-parar" aria-label="Parar cronômetro">✕</button>
+        </div>
+
+        <p id="status-rede" class="status-rede" role="status" hidden></p>
+
+        <nav id="filtros" class="filtro-treinos" aria-label="Escolha o treino"></nav>
+        <section id="lista-exercicios" aria-live="polite"></section>
+    </main>
+    <script type="module" src="js/aluno.js"></script>
+</body>
+</html>

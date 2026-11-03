@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#121212">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/png" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Treino">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="stylesheet" href="css/style.css">
+    <title>Treino do Dia · Treinador</title>
+</head>
+<body class="carregando">
+    <main class="container-admin">
+        <header class="header-admin">
+            <h1>Painel do treinador</h1>
+            <button id="btn-sair" type="button" class="btn-sair">Sair</button>
+        </header>
+
+        <nav class="abas" role="tablist" aria-label="Seções">
+            <button type="button" role="tab" class="aba-btn active" data-aba="painel" aria-selected="true">Painel</button>
+            <button type="button" role="tab" class="aba-btn" data-aba="ficha" aria-selected="false">Fichas</button>
+            <button type="button" role="tab" class="aba-btn" data-aba="alunos" aria-selected="false">Alunos</button>
+            <button type="button" role="tab" class="aba-btn" data-aba="clonar" aria-selected="false">Copiar</button>
+        </nav>
+
+        <section id="aba-painel" class="aba">
+            <h2>Últimos 7 dias</h2>
+            <p id="painel-resumo" class="sutil"></p>
+            <div id="painel-lista"></div>
+        </section>
+
+        <section id="aba-ficha" class="aba" hidden>
+            <h2>Ficha de treino</h2>
+            <label class="campo">
+                <span>Aluno</span>
+                <select id="sel-ficha-aluno"></select>
+            </label>
+            <div id="letras" class="filtro-treinos" role="group" aria-label="Escolha a letra do treino"></div>
+
+            <div id="ficha-area" hidden>
+                <div id="lista-itens" class="lista-itens"></div>
+
+                <h3>Adicionar exercício</h3>
+                <form id="form-novo" class="caixa">
+                    <datalist id="lista-catalogo"></datalist>
+                    <label class="campo">
+                        <span>Exercício</span>
+                        <input name="nome" type="text" list="lista-catalogo" maxlength="80" placeholder="Digite ou escolha da lista" autocomplete="off" required>
+                    </label>
+                    <div class="grade-2">
+                        <label class="campo"><span>Grupo</span><select name="grupo"></select></label>
+                        <label class="campo"><span>Vídeo (YouTube)</span><input name="video" type="url" placeholder="https://youtu.be/…"></label>
+                    </div>
+                    <div class="grade-3">
+                        <label class="campo"><span>Séries</span><input name="series" type="number" min="1" max="20" value="3" required></label>
+                        <label class="campo"><span>Reps</span><input name="reps" type="text" maxlength="20" value="10" required></label>
+                        <label class="campo"><span>Descanso (s)</span><input name="descanso" type="number" min="0" max="900" step="5" value="60" required></label>
+                    </div>
+                    <button id="btn-adicionar" type="submit" class="btn-principal">Adicionar à ficha</button>
+                </form>
+            </div>
+        </section>
+
+        <section id="aba-alunos" class="aba" hidden>
+            <h2>Cadastrar aluno</h2>
+            <form id="form-aluno" class="caixa">
+                <label class="campo"><span>Nome</span><input name="nome" type="text" maxlength="80" required></label>
+                <div class="grade-2">
+                    <label class="campo"><span>Nickname</span><input name="nick" type="text" maxlength="30" autocapitalize="none" autocomplete="off" placeholder="ex.: maria" required></label>
+                    <label class="campo"><span>Senha (mín. 8)</span><input name="senha" type="password" minlength="8" autocomplete="new-password" required></label>
+                </div>
+                <label class="campo"><span>Foto (link https, opcional)</span><input name="foto" type="url"></label>
+                <label class="campo"><span>Frase motivacional (opcional)</span><input name="frase" type="text" maxlength="120"></label>
+                <button id="btn-criar-aluno" type="submit" class="btn-principal">Cadastrar aluno</button>
+            </form>
+            <h3>Alunos cadastrados</h3>
+            <ul id="lista-alunos" class="lista-simples"></ul>
+        </section>
+
+        <section id="aba-clonar" class="aba" hidden>
+            <h2>Copiar fichas</h2>
+            <p class="sutil">Copia todas as fichas (A, B, C…) de um aluno para outro.</p>
+            <form id="form-clone" class="caixa">
+                <label class="campo"><span>Origem</span><select id="sel-origem"></select></label>
+                <label class="campo"><span>Destino</span><select id="sel-destino"></select></label>
+                <label class="marcar"><input id="chk-substituir" type="checkbox"> Substituir as fichas que o destino já tem</label>
+                <button id="btn-clonar" type="submit" class="btn-principal">Copiar fichas</button>
+            </form>
+        </section>
+    </main>
+    <script type="module" src="js/admin.js"></script>
+</body>
+</html>
