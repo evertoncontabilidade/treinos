@@ -1,8 +1,6 @@
 // Edge Function: criar-aluno
-// Só um admin logado consegue chamar. Usa a service_role (que nunca vai para o navegador)
+// Só um admin logado consegue chamar. Usa a chave secreta do projeto (que nunca vai para o navegador)
 // para criar o usuário no Auth e o perfil, e desfaz tudo se algo der errado.
-//
-// Deploy:  supabase functions deploy criar-aluno
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const cors = {
@@ -16,22 +14,32 @@ const json = (corpo: unknown, status = 200) =>
     headers: { ...cors, 'Content-Type': 'application/json' },
   });
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
+// Chave secreta do projeto: formato novo (sb_secret_...) ou, se não existir, o antigo (service_role).
+function chaveSecreta(): string {
+  try {
+    const mapa = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') ?? '{}');
+    if (mapa?.default) return mapa.default;
+  } catch { /* cai para a chave antiga */ }
+  return Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+}
+
+async function tratar(req: Request): Promise<Response> {
   if (req.method !== 'POST') return json({ erro: 'Método não permitido' }, 405);
 
-  const url = Deno.env.get('SUPABASE_URL')!;
-  const anon = Deno.env.get('SUPABASE_ANON_KEY')!;
-  const service = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const url = Deno.env.get('SUPABASE_URL') ?? '';
+  const secreta = chaveSecreta();
+  if (!url || !secreta) return json({ erro: 'A função não encontrou as chaves do projeto' }, 500);
 
-  // 1) Quem está chamando?
-  const authorization = req.headers.get('Authorization') ?? '';
-  const chamador = createClient(url, anon, { global: { headers: { Authorization: authorization } } });
-  const { data: { user }, error: erroUser } = await chamador.auth.getUser();
-  if (erroUser || !user) return json({ erro: 'Não autenticado' }, 401);
+  const admin = createClient(url, secreta, { auth: { persistSession: false, autoRefreshToken: false } });
+
+  // 1) Quem está chamando? (valida o token do usuário logado)
+  const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
+  if (!token) return json({ erro: 'Não autenticado' }, 401);
+  const { data: dadosUser, error: erroUser } = await admin.auth.getUser(token);
+  const user = dadosUser?.user;
+  if (erroUser || !user) return json({ erro: 'Sessão inválida. Saia e entre de novo.' }, 401);
 
   // 2) É admin?
-  const admin = createClient(url, service);
   const { data: perfilChamador } = await admin.from('perfis').select('role').eq('id', user.id).single();
   if (perfilChamador?.role !== 'admin') return json({ erro: 'Apenas administradores' }, 403);
 
@@ -66,7 +74,7 @@ Deno.serve(async (req) => {
     nome,
     nickname: nick,
     role: 'usuario',
-    foto_url: foto_url || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
+    foto_url: foto_url || null, // sem foto: o app mostra o avatar local; o aluno escolhe a dele depois
     frase: frase || 'Foco na missão!',
   });
   if (erroPerfil) {
@@ -75,4 +83,15 @@ Deno.serve(async (req) => {
   }
 
   return json({ ok: true, id: criado.user.id });
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
+  try {
+    return await tratar(req);
+  } catch (e) {
+    // Qualquer falha inesperada volta como JSON (com CORS), em vez de um erro genérico no navegador.
+    console.error(e);
+    return json({ erro: `Erro interno: ${e instanceof Error ? e.message : String(e)}` }, 500);
+  }
 });
