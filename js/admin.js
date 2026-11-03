@@ -127,7 +127,7 @@ async function cadastrarAluno(e) {
   const f = e.target.elements;
   await comCarregando($('#btn-criar-aluno'), async () => {
     const { data, error } = await supabase.functions.invoke('criar-aluno', {
-      body: { nome: f.nome.value, nick: f.nick.value, senha: f.senha.value, foto_url: f.foto.value, frase: f.frase.value },
+      body: { nome: f.nome.value, nick: f.nick.value, senha: f.senha.value, frase: f.frase.value },
     });
     if (error) return toast(await mensagemDeErro(error), 'erro');
     if (data?.erro) return toast(data.erro, 'erro');
