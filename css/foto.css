@@ -1,0 +1,27 @@
+/* Foto de perfil ampliada (aluno.html).
+   Os botões reaproveitam as classes do tema (.btn-principal, .btn-mini), então seguem as suas cores.
+   Os demais tons usam as variáveis do tema, com valores de reserva. */
+.dialogo-foto {
+    border: none;
+    border-radius: 16px;
+    padding: 0;
+    width: min(92vw, 380px);
+    background: var(--painel, #1e1e1e);
+    color: var(--texto, #f2f2f2);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+}
+.dialogo-foto::backdrop { background: rgba(0, 0, 0, 0.78); }
+.dialogo-corpo { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 20px; }
+.dialogo-foto img {
+    display: block;
+    width: min(100%, 320px);
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 14px;
+    background: #000;
+}
+.dialogo-acoes { display: flex; gap: 10px; width: 100%; }
+.dialogo-acoes .btn-principal { flex: 1; }
+.foto-status { min-height: 1.2em; font-size: 0.85rem; text-align: center; color: var(--sutil, #9a9a9a); }
+.foto-status[data-tipo="ok"] { color: var(--ok, #2ecc71); }
+.foto-status[data-tipo="erro"] { color: var(--erro, #ff4444); }
