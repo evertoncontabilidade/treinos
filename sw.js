@@ -4,7 +4,7 @@
 // - Chamadas ao Supabase (dados): nunca passam pelo cache. O app guarda o que precisa por conta própria.
 //
 // IMPORTANTE: a cada publicação nova, aumente o número em VERSAO para limpar o cache antigo.
-const VERSAO = 'v3-foto';
+const VERSAO = 'v4-foto-ampliada';
 const CACHE = `treino-do-dia-${VERSAO}`;
 
 const ARQUIVOS = [
@@ -14,6 +14,7 @@ const ARQUIVOS = [
   'admin.html',
   'manifest.webmanifest',
   'css/style.css',
+  'css/foto.css',
   'js/supabase.js',
   'js/ui.js',
   'js/auth.js',
