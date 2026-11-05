@@ -87,19 +87,48 @@ function pintarPerfil(perfil) {
   $('#frase-aluno').textContent = perfil.frase || '';
   $('#foto-aluno').src = perfil.foto_url || AVATAR_PADRAO;
 }
+const dialogoFoto = $('#dialogo-foto');
+
+function abrirFoto() {
+  // Navegador sem <dialog>: vai direto para a escolha da foto
+  if (typeof dialogoFoto.showModal !== 'function') return $('#input-foto').click();
+  const atual = $('#foto-aluno').src;
+  $('#foto-grande').src = atual;
+  $('#btn-trocar-foto').textContent = atual.endsWith(AVATAR_PADRAO) ? 'Escolher foto' : 'Trocar foto';
+  $('#foto-status').textContent = '';
+  dialogoFoto.showModal();
+}
+
+// O quadro aberto fica na frente de tudo (inclusive dos avisos), então o retorno aparece dentro dele.
+function avisoFoto(texto, tipo = 'info') {
+  if (dialogoFoto.open) {
+    const el = $('#foto-status');
+    el.textContent = texto;
+    el.dataset.tipo = tipo;
+  } else {
+    toast(texto, tipo);
+  }
+}
+
 async function aoEscolherFoto(e) {
   const arquivo = e.target.files[0];
   e.target.value = ''; // permite escolher a mesma foto outra vez
   if (!arquivo) return;
+  const botao = $('#btn-trocar-foto');
+  botao.disabled = true;
   try {
-    toast('Preparando a foto…', 'info');
+    avisoFoto('Preparando a foto…');
     const dataUrl = await fotoParaPerfil(arquivo);
     const { error } = await supabase.from('perfis').update({ foto_url: dataUrl }).eq('id', ctx.user.id);
     if (error) throw error;
     $('#foto-aluno').src = dataUrl;
-    toast('Foto atualizada.', 'ok');
+    $('#foto-grande').src = dataUrl;
+    botao.textContent = 'Trocar foto';
+    avisoFoto('Foto atualizada.', 'ok');
   } catch (erro) {
-    toast(erro.message || 'Não foi possível trocar a foto.', 'erro');
+    avisoFoto(erro.message || 'Não foi possível trocar a foto.', 'erro');
+  } finally {
+    botao.disabled = false;
   }
 }
 
@@ -332,7 +361,10 @@ async function iniciar() {
   if (!ctx) return;
   document.body.classList.remove('carregando');
   pintarPerfil(ctx.perfil);
-  $('#foto-aluno').closest('.foto-perfil').addEventListener('click', () => $('#input-foto').click());
+  $('#foto-aluno').closest('.foto-perfil').addEventListener('click', abrirFoto);
+  $('#btn-trocar-foto').addEventListener('click', () => $('#input-foto').click());
+  $('#btn-fechar-foto').addEventListener('click', () => dialogoFoto.close());
+  dialogoFoto.addEventListener('click', (e) => { if (e.target === dialogoFoto) dialogoFoto.close(); }); // toque fora fecha
   $('#input-foto').addEventListener('change', aoEscolherFoto);
   // Se uma foto antiga (link externo) sumir do ar, volta para o avatar local
   $('#foto-aluno').addEventListener('error', (e) => {
