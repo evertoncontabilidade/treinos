@@ -12,6 +12,7 @@
     <meta name="apple-mobile-web-app-title" content="Treino">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/foto.css">
     <title>Treino do Dia</title>
 </head>
 <body class="carregando">
@@ -41,6 +42,16 @@
         <nav id="filtros" class="filtro-treinos" aria-label="Escolha o treino"></nav>
         <section id="lista-exercicios" aria-live="polite"></section>
     </main>
+    <dialog id="dialogo-foto" class="dialogo-foto" aria-label="Sua foto de perfil">
+        <div class="dialogo-corpo">
+            <img id="foto-grande" src="icons/avatar.svg" alt="Sua foto de perfil ampliada">
+            <p id="foto-status" class="foto-status" role="status"></p>
+            <div class="dialogo-acoes">
+                <button id="btn-trocar-foto" type="button" class="btn-principal">Trocar foto</button>
+                <button id="btn-fechar-foto" type="button" class="btn-mini">Fechar</button>
+            </div>
+        </div>
+    </dialog>
     <script type="module" src="js/aluno.js"></script>
 </body>
 </html>
