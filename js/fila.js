@@ -11,7 +11,7 @@ function gravar(fila) {
   try { localStorage.setItem(CHAVE, JSON.stringify(fila)); } catch { /* armazenamento cheio: perde só a fila */ }
 }
 
-export const chaveDe = (i) => [i.aluno_id, i.ficha_id, i.data, i.ficha_item_id].join('|');
+export const chaveDe = (i) => [i.aluno_id, i.ficha_id, i.data, i.ficha_item_id ?? 'fim'].join('|');
 
 export function ehErroDeRede(erro) {
   if (!navigator.onLine) return true;
@@ -25,7 +25,12 @@ export function pendentes() {
 
 /** Alterações ainda não enviadas de uma ficha/dia, para somar ao que veio do servidor. */
 export function execucoesPendentes(alunoId, fichaId, data) {
-  return ler().filter((i) => i.aluno_id === alunoId && i.ficha_id === fichaId && i.data === data);
+  return ler().filter((i) => i.tipo !== 'finalizar' && i.aluno_id === alunoId && i.ficha_id === fichaId && i.data === data);
+}
+
+/** Fim de treino ainda não enviado para essa ficha/dia (ou undefined). */
+export function finalizacaoPendente(alunoId, fichaId, data) {
+  return ler().find((i) => i.tipo === 'finalizar' && i.aluno_id === alunoId && i.ficha_id === fichaId && i.data === data);
 }
 
 /** Junta alterações do mesmo exercício no mesmo dia: a mais nova vence, campo a campo. */
@@ -34,6 +39,7 @@ export function enfileirar(item) {
   const existente = fila.find((x) => chaveDe(x) === chaveDe(item));
   if (existente) {
     existente.campos = { ...existente.campos, ...item.campos };
+    if (item.finalizada_em) existente.finalizada_em = item.finalizada_em;
     existente.t = item.t;
   } else {
     fila.push(item);
@@ -52,15 +58,16 @@ function remover(item) {
 }
 
 async function enviar(item) {
+  const dadosSessao = { aluno_id: item.aluno_id, ficha_id: item.ficha_id, data: item.data };
+  if (item.tipo === 'finalizar') dadosSessao.finalizada_em = item.finalizada_em;
+
   const { data: sessao, error: erroSessao } = await supabase
     .from('sessoes')
-    .upsert(
-      { aluno_id: item.aluno_id, ficha_id: item.ficha_id, data: item.data },
-      { onConflict: 'aluno_id,ficha_id,data' },
-    )
+    .upsert(dadosSessao, { onConflict: 'aluno_id,ficha_id,data' })
     .select('id')
     .single();
   if (erroSessao) throw erroSessao;
+  if (item.tipo === 'finalizar') return; // fim do treino: só marca a sessão
 
   const { error: erroExec } = await supabase
     .from('execucoes')

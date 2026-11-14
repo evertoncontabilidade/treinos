@@ -1,9 +1,10 @@
 import { supabase } from './supabase.js';
 import { exigirPapel, sair } from './auth.js';
-import { h, $, limpar, toast, hojeLocal, formatarDiaMes, idYoutube } from './ui.js';
-import { gravarExecucao, sincronizar, pendentes, execucoesPendentes } from './fila.js';
+import { h, $, limpar, toast, hojeLocal, diasAtras, diferencaDias, formatarDiaMes, idYoutube } from './ui.js';
+import { gravarExecucao, sincronizar, pendentes, execucoesPendentes, finalizacaoPendente } from './fila.js';
 import { criarTimer } from './timer.js';
 import { fotoParaPerfil } from './imagem.js';
+import { iniciarTema } from './tema.js';
 import './pwa.js';
 
 const AVATAR_PADRAO = 'icons/avatar.svg';
@@ -15,6 +16,7 @@ let letraAtual = null;
 let fichaAtual = null;
 let itens = [];          // itens da ficha aberta
 let ultimas = {};        // exercicio_id -> { carga, data } (último treino anterior a hoje)
+let finalizadoHoje = null; // horário (ISO) em que o treino de hoje foi finalizado
 let estadoHoje = {};     // ficha_item_id -> { carga, feito } (treino de hoje)
 
 const lista = $('#lista-exercicios');
@@ -174,6 +176,8 @@ async function selecionar(letra) {
 async function carregarTreino() {
   fichaAtual = fichas.find((f) => f.letra === letraAtual);
   const dia = hoje();
+  $('#bloco-final').hidden = true;
+  finalizadoHoje = null;
   mensagem('Carregando treino…');
 
   const resp = await supabase
@@ -188,10 +192,11 @@ async function carregarTreino() {
     ultimas = {};
 
     const { data: sessao, error: erroSessao } = await supabase
-      .from('sessoes').select('id')
+      .from('sessoes').select('id, finalizada_em')
       .eq('aluno_id', ctx.user.id).eq('ficha_id', fichaAtual.id).eq('data', dia)
       .maybeSingle();
     if (erroSessao) toast(`Não consegui ler o treino de hoje: ${erroSessao.message}`, 'erro');
+    finalizadoHoje = sessao?.finalizada_em ?? null;
     if (sessao) {
       const { data: execs, error: erroExecs } = await supabase
         .from('execucoes').select('ficha_item_id, carga, feito').eq('sessao_id', sessao.id);
@@ -215,6 +220,7 @@ async function carregarTreino() {
     itens = cache.itens;
     ultimas = cache.ultimas;
     estadoHoje = lerCache(chave(`hoje:${fichaAtual.id}:${dia}`), {});
+    finalizadoHoje = lerCache(chave(`fim:${fichaAtual.id}:${dia}`), null);
   }
 
   // O que ainda não foi enviado vale mais do que o que veio do servidor.
@@ -222,15 +228,22 @@ async function carregarTreino() {
     estadoHoje[p.ficha_item_id] = { ...estadoHoje[p.ficha_item_id], ...p.campos };
   });
   guardar(chave(`hoje:${fichaAtual.id}:${dia}`), estadoHoje);
+  const fimPendente = finalizacaoPendente(ctx.user.id, fichaAtual.id, dia);
+  if (fimPendente) finalizadoHoje = fimPendente.finalizada_em;
+  guardar(chave(`fim:${fichaAtual.id}:${dia}`), finalizadoHoje);
 
   renderTreino();
 }
 
 function renderTreino() {
   limpar(lista);
-  if (!itens.length) return mensagem('Esta ficha ainda não tem exercícios.');
+  if (!itens.length) {
+    atualizarBlocoFinal();
+    return mensagem('Esta ficha ainda não tem exercícios.');
+  }
   const pendentesPrimeiro = [...itens].sort((a, b) => Number(!!estadoHoje[a.id]?.feito) - Number(!!estadoHoje[b.id]?.feito));
   pendentesPrimeiro.forEach((item) => lista.append(cartao(item)));
+  atualizarBlocoFinal();
 }
 
 function formatarCarga(valor) {
@@ -357,6 +370,7 @@ function cartao(item) {
       botaoCheck.setAttribute('aria-pressed', String(!novo));
       toast(`Não foi possível registrar: ${erro.message || erro}`, 'erro');
     }
+    atualizarBlocoFinal();
   });
 
   const botaoTimer = h('button', { type: 'button', class: 'btn-timer' }, `⏱️ Descanso ${item.descanso}s`);
@@ -402,12 +416,108 @@ function cartao(item) {
   return card;
 }
 
+// ---------- finalizar treino ----------
+const FRASES_FINAIS = [
+  'Treino concluído! Você apareceu e fez acontecer.',
+  'Mandou bem! Constância é o que transforma resultado.',
+  'Missão cumprida! Agora é hidratar, comer bem e descansar.',
+  'Mais um treino na conta. Seu corpo agradece!',
+  'Orgulho do seu esforço de hoje. Até o próximo treino!',
+  'Bom trabalho! Cada treino te deixa mais perto do seu objetivo.',
+];
+
+function contarFeitos() {
+  return itens.filter((i) => estadoHoje[i.id]?.feito).length;
+}
+
+function atualizarBlocoFinal() {
+  const bloco = $('#bloco-final');
+  bloco.hidden = itens.length === 0;
+  if (bloco.hidden) return;
+  const botao = $('#btn-finalizar');
+  botao.classList.toggle('concluido', !!finalizadoHoje);
+  botao.textContent = finalizadoHoje ? '🎉 Treino finalizado' : 'Finalizar treino';
+  $('#info-final').textContent = finalizadoHoje
+    ? `Finalizado às ${new Date(finalizadoHoje).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}. Toque para ver a mensagem.`
+    : `${contarFeitos()} de ${itens.length} exercícios marcados`;
+}
+
+async function treinosNaSemana() {
+  try {
+    const { count, error } = await supabase.from('sessoes')
+      .select('id', { count: 'exact', head: true })
+      .not('finalizada_em', 'is', null)
+      .gte('data', diasAtras(6));
+    return error ? null : count;
+  } catch {
+    return null;
+  }
+}
+
+async function mostrarParabens(feitos) {
+  const nome = (ctx.perfil.nome || '').trim().split(/\s+/)[0] || '';
+  const semana = await treinosNaSemana();
+  $('#titulo-fim').textContent = nome ? `Parabéns, ${nome}!` : 'Parabéns!';
+  $('#texto-fim').textContent = FRASES_FINAIS[Math.floor(Math.random() * FRASES_FINAIS.length)];
+  const linhas = [`Treino ${letraAtual}: ${feitos} de ${itens.length} exercícios marcados`];
+  if (semana) linhas.push(`${semana} ${semana === 1 ? 'treino finalizado' : 'treinos finalizados'} nos últimos 7 dias`);
+  $('#resumo-fim').textContent = linhas.join('\n');
+  const dialogo = $('#dialogo-fim');
+  if (typeof dialogo.showModal === 'function') dialogo.showModal();
+  else toast(`Parabéns${nome ? `, ${nome}` : ''}! Treino concluído.`, 'ok');
+}
+
+async function finalizarTreino() {
+  const botao = $('#btn-finalizar');
+  const feitos = contarFeitos();
+  if (!finalizadoHoje) {
+    if (feitos < itens.length && !confirm(`Você marcou ${feitos} de ${itens.length} exercícios. Finalizar mesmo assim?`)) return;
+    botao.disabled = true;
+    try {
+      const agora = new Date().toISOString();
+      const dia = hoje();
+      const r = await gravarExecucao({ tipo: 'finalizar', aluno_id: ctx.user.id, ficha_id: fichaAtual.id, data: dia, finalizada_em: agora });
+      finalizadoHoje = agora;
+      guardar(chave(`fim:${fichaAtual.id}:${dia}`), finalizadoHoje);
+      timer.parar();
+      if (r === 'fila') toast('Sem internet: o fim do treino será enviado quando a conexão voltar.', 'info');
+    } catch (erro) {
+      toast(`Não foi possível finalizar: ${erro.message || erro}`, 'erro');
+      return;
+    } finally {
+      botao.disabled = false;
+    }
+  }
+  atualizarBlocoFinal();
+  await mostrarParabens(feitos);
+}
+
+// ---------- medidas: lembrete semanal ----------
+async function carregarDicaMedidas() {
+  const el = $('#dica-medidas');
+  try {
+    const { data, error } = await supabase.from('medidas').select('data').order('data', { ascending: false }).limit(1);
+    if (error) return;
+    if (!data.length) { el.textContent = 'anote a primeira'; return; }
+    const dias = diferencaDias(hoje(), data[0].data);
+    if (dias === 0) el.textContent = 'anotadas hoje';
+    else if (dias >= 7) el.textContent = `última há ${dias} dias · hora de medir`;
+    else el.textContent = `última há ${dias} ${dias === 1 ? 'dia' : 'dias'}`;
+  } catch { /* sem internet: fica sem dica */ }
+}
+
 // ---------- início ----------
 async function iniciar() {
   ctx = await exigirPapel('usuario');
   if (!ctx) return;
   document.body.classList.remove('carregando');
   pintarPerfil(ctx.perfil);
+  iniciarTema($('#btn-tema'));
+  $('#btn-finalizar').addEventListener('click', finalizarTreino);
+  const dialogoFim = $('#dialogo-fim');
+  $('#btn-fechar-fim').addEventListener('click', () => dialogoFim.close());
+  dialogoFim.addEventListener('click', (e) => { if (e.target === dialogoFim) dialogoFim.close(); });
+  carregarDicaMedidas();
   $('#foto-aluno').closest('.foto-perfil').addEventListener('click', abrirFoto);
   $('#btn-trocar-foto').addEventListener('click', () => $('#input-foto').click());
   $('#btn-fechar-foto').addEventListener('click', () => dialogoFoto.close());

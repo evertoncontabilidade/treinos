@@ -2,6 +2,7 @@ import { supabase } from './supabase.js';
 import { exigirPapel, sair } from './auth.js';
 import { h, $, $$, limpar, toast, comCarregando, hojeLocal, diasAtras, formatarDiaMes, diferencaDias, idYoutube } from './ui.js';
 import { tornarOrdenavel } from './ordenavel.js';
+import { iniciarTema } from './tema.js';
 import './pwa.js';
 
 const GRUPOS = ['Peito', 'Costas', 'Pernas', 'Ombros', 'Braços', 'Core'];
@@ -349,6 +350,7 @@ async function iniciar() {
   if (!ctx) return;
   document.body.classList.remove('carregando');
 
+  iniciarTema($('#btn-tema'));
   $('#btn-sair').addEventListener('click', sair);
   $$('[data-aba]').forEach((b) => b.addEventListener('click', () => trocarAba(b.dataset.aba)));
   $('#form-aluno').addEventListener('submit', cadastrarAluno);
