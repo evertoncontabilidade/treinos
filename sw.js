@@ -4,7 +4,7 @@
 // - Chamadas ao Supabase (dados): nunca passam pelo cache. O app guarda o que precisa por conta própria.
 //
 // IMPORTANTE: a cada publicação nova, aumente o número em VERSAO para limpar o cache antigo.
-const VERSAO = 'v5-cargas';
+const VERSAO = 'v6-temas-medidas';
 const CACHE = `treino-do-dia-${VERSAO}`;
 
 const ARQUIVOS = [
@@ -12,6 +12,7 @@ const ARQUIVOS = [
   'index.html',
   'aluno.html',
   'admin.html',
+  'medidas.html',
   'manifest.webmanifest',
   'css/style.css',
   'css/foto.css',
@@ -25,6 +26,9 @@ const ARQUIVOS = [
   'js/fila.js',
   'js/ordenavel.js',
   'js/imagem.js',
+  'js/tema.js',
+  'js/medidas.js',
+  'js/medidas-util.js',
   'js/pwa.js',
   'icons/icon-192.png',
   'icons/icon-512.png',
