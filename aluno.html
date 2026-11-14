@@ -11,6 +11,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="Treino">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <script>try{document.documentElement.dataset.tema=localStorage.getItem('tdd:tema')||'petroleo'}catch(e){}</script>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/foto.css">
     <title>Treino do Dia</title>
@@ -28,7 +29,10 @@
                     <p id="frase-aluno" class="frase-motivacional"></p>
                 </div>
             </div>
-            <button id="btn-sair" type="button" class="btn-sair">Sair</button>
+            <div class="acoes-topo">
+                <button id="btn-tema" type="button" class="btn-icone" aria-label="Mudar as cores do aplicativo" title="Cores">🎨</button>
+                <button id="btn-sair" type="button" class="btn-sair">Sair</button>
+            </div>
         </header>
 
         <div id="cronometro" class="cronometro-inline" role="timer" aria-live="off">
@@ -39,9 +43,28 @@
 
         <p id="status-rede" class="status-rede" role="status" hidden></p>
 
+        <a id="link-medidas" class="link-medidas" href="medidas.html">
+            <span>📏 Minhas medidas</span>
+            <small id="dica-medidas"></small>
+        </a>
+
         <nav id="filtros" class="filtro-treinos" aria-label="Escolha o treino"></nav>
         <section id="lista-exercicios" aria-live="polite"></section>
+
+        <section id="bloco-final" class="bloco-final" hidden>
+            <button id="btn-finalizar" type="button" class="btn-principal btn-finalizar">Finalizar treino</button>
+            <p id="info-final" class="sutil"></p>
+        </section>
     </main>
+    <dialog id="dialogo-fim" class="dialogo" aria-labelledby="titulo-fim">
+        <div class="dialogo-corpo texto-centro">
+            <p class="emoji-grande" aria-hidden="true">🎉</p>
+            <h2 id="titulo-fim">Parabéns!</h2>
+            <p id="texto-fim"></p>
+            <p id="resumo-fim" class="sutil resumo-fim"></p>
+            <button id="btn-fechar-fim" type="button" class="btn-principal">Fechar</button>
+        </div>
+    </dialog>
     <dialog id="dialogo-foto" class="dialogo-foto" aria-label="Sua foto de perfil">
         <div class="dialogo-corpo">
             <img id="foto-grande" src="icons/avatar.svg" alt="Sua foto de perfil ampliada">

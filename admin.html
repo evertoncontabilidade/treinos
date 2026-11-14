@@ -11,6 +11,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="Treino">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <script>try{document.documentElement.dataset.tema=localStorage.getItem('tdd:tema')||'petroleo'}catch(e){}</script>
     <link rel="stylesheet" href="css/style.css">
     <title>Treino do Dia · Treinador</title>
 </head>
@@ -18,7 +19,10 @@
     <main class="container-admin">
         <header class="header-admin">
             <h1>Painel do treinador</h1>
-            <button id="btn-sair" type="button" class="btn-sair">Sair</button>
+            <div class="acoes-topo">
+                <button id="btn-tema" type="button" class="btn-icone" aria-label="Mudar as cores do aplicativo" title="Cores">🎨</button>
+                <button id="btn-sair" type="button" class="btn-sair">Sair</button>
+            </div>
         </header>
 
         <nav class="abas" role="tablist" aria-label="Seções">

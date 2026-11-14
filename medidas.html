@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#121212">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/png" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Treino">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <script>try{document.documentElement.dataset.tema=localStorage.getItem('tdd:tema')||'petroleo'}catch(e){}</script>
+    <link rel="stylesheet" href="css/style.css">
+    <title>Treino do Dia · Medidas</title>
+</head>
+<body class="carregando">
+    <main class="container-aluno">
+        <header class="header-medidas">
+            <a class="btn-mini voltar" href="aluno.html">← Voltar</a>
+            <h1>Minhas medidas</h1>
+        </header>
+        <p class="sutil">Anote uma vez por semana, de preferência no mesmo dia e no mesmo horário. Preencha só o que quiser medir. Só você vê estes dados.</p>
+
+        <form id="form-medidas" class="caixa" style="margin-top:14px">
+            <label class="campo">
+                <span>Data</span>
+                <input id="m-data" type="date" required>
+            </label>
+            <div id="campos-medidas" class="grade-medidas"></div>
+            <p id="aviso-edicao" class="sutil" hidden>Já existe um registro nesta data: salvar vai atualizá-lo.</p>
+            <button id="btn-salvar-medidas" type="submit" class="btn-principal">Salvar medidas</button>
+        </form>
+
+        <h2 class="secao">Evolução</h2>
+        <label class="campo">
+            <span>Medida</span>
+            <select id="sel-grafico"></select>
+        </label>
+        <div id="grafico" class="grafico"></div>
+
+        <h2 class="secao">Histórico</h2>
+        <div id="historico"></div>
+    </main>
+    <script type="module" src="js/medidas.js"></script>
+</body>
+</html>
