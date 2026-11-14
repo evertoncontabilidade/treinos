@@ -32,9 +32,23 @@ export function execucoesPendentes(alunoId, fichaId, data) {
 export function enfileirar(item) {
   const fila = ler();
   const existente = fila.find((x) => chaveDe(x) === chaveDe(item));
-  if (existente) existente.campos = { ...existente.campos, ...item.campos };
-  else fila.push(item);
+  if (existente) {
+    existente.campos = { ...existente.campos, ...item.campos };
+    existente.t = item.t;
+  } else {
+    fila.push(item);
+  }
   gravar(fila);
+}
+
+/** Tira da fila só o que foi enviado, se ninguém alterou o item enquanto a requisição estava no ar. */
+function remover(item) {
+  const fila = ler();
+  const i = fila.findIndex((x) => chaveDe(x) === chaveDe(item) && x.t === item.t);
+  if (i >= 0) {
+    fila.splice(i, 1);
+    gravar(fila);
+  }
 }
 
 async function enviar(item) {
@@ -63,35 +77,51 @@ async function enviar(item) {
   if (erroExec) throw erroExec;
 }
 
-/** Tenta enviar agora; se não houver internet, guarda na fila. Retorna 'enviado' ou 'fila'. */
-export async function gravarExecucao(item) {
-  try {
-    await enviar(item);
-    return 'enviado';
-  } catch (erro) {
-    if (ehErroDeRede(erro)) {
-      enfileirar(item);
-      return 'fila';
+// Um envio de cada vez, na ordem em que foram pedidos (evita que uma carga antiga chegue depois da nova).
+let cadeia = Promise.resolve();
+const emSequencia = (fn) => {
+  const resultado = cadeia.then(fn);
+  cadeia = resultado.catch(() => {});
+  return resultado;
+};
+
+/**
+ * Guarda no aparelho ANTES de enviar. Se o app for fechado ou trocado no meio do envio,
+ * o registro continua na fila e é enviado na próxima abertura.
+ * Retorna 'enviado' ou 'fila' (sem internet). Se o servidor recusar, lança o erro.
+ */
+export function gravarExecucao(item) {
+  enfileirar({ ...item, t: Date.now() });
+  return emSequencia(async () => {
+    const atual = ler().find((x) => chaveDe(x) === chaveDe(item));
+    if (!atual) return 'enviado'; // já seguiu junto com uma gravação anterior
+    try {
+      await enviar(atual);
+      remover(atual);
+      return 'enviado';
+    } catch (erro) {
+      if (ehErroDeRede(erro)) return 'fila';
+      remover(atual); // o servidor recusou: insistir não adianta
+      throw erro;
     }
-    throw erro;
-  }
+  });
 }
 
 /** Envia o que ficou guardado. Retorna quantos foram enviados. */
-export async function sincronizar() {
-  const fila = ler();
-  if (!fila.length) return 0;
-  const restante = [];
-  let enviados = 0;
-  for (const item of fila) {
-    try {
-      await enviar(item);
-      enviados += 1;
-    } catch (erro) {
-      if (ehErroDeRede(erro)) restante.push(item);
-      else console.warn('Registro descartado (rejeitado pelo servidor):', erro?.message || erro);
+export function sincronizar() {
+  return emSequencia(async () => {
+    let enviados = 0;
+    for (const item of ler()) {
+      try {
+        await enviar(item);
+        remover(item);
+        enviados += 1;
+      } catch (erro) {
+        if (ehErroDeRede(erro)) break; // sem rede: tenta de novo mais tarde
+        console.warn('Registro descartado (recusado pelo servidor):', erro?.message || erro);
+        remover(item);
+      }
     }
-  }
-  gravar(restante);
-  return enviados;
+    return enviados;
+  });
 }
