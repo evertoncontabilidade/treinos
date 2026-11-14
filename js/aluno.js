@@ -79,6 +79,7 @@ window.addEventListener('online', tentarSincronizar);
 window.addEventListener('offline', atualizarStatus);
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') { timer.retomar(); tentarSincronizar(); }
+  else document.querySelectorAll('.input-carga').forEach((i) => i.dispatchEvent(new Event('change'))); // salva o que ficou digitado
 });
 
 // ---------- perfil ----------
@@ -186,23 +187,26 @@ async function carregarTreino() {
     estadoHoje = {};
     ultimas = {};
 
-    const { data: sessao } = await supabase
+    const { data: sessao, error: erroSessao } = await supabase
       .from('sessoes').select('id')
       .eq('aluno_id', ctx.user.id).eq('ficha_id', fichaAtual.id).eq('data', dia)
       .maybeSingle();
+    if (erroSessao) toast(`Não consegui ler o treino de hoje: ${erroSessao.message}`, 'erro');
     if (sessao) {
-      const { data: execs } = await supabase
+      const { data: execs, error: erroExecs } = await supabase
         .from('execucoes').select('ficha_item_id, carga, feito').eq('sessao_id', sessao.id);
+      if (erroExecs) toast(`Não consegui ler as cargas de hoje: ${erroExecs.message}`, 'erro');
       (execs || []).forEach((e) => { estadoHoje[e.ficha_item_id] = { carga: e.carga, feito: e.feito }; });
     }
 
     const exercicioIds = [...new Set(itens.map((i) => i.exercicio_id))];
     if (exercicioIds.length) {
-      const { data: hist } = await supabase
+      const { data: hist, error: erroHist } = await supabase
         .from('historico_cargas').select('exercicio_id, carga, data')
         .in('exercicio_id', exercicioIds).lt('data', dia)
         .order('data', { ascending: false }).limit(300);
       (hist || []).forEach((r) => { if (!ultimas[r.exercicio_id]) ultimas[r.exercicio_id] = { carga: r.carga, data: r.data }; });
+      if (erroHist) toast(`Não consegui carregar as últimas cargas: ${erroHist.message}`, 'erro');
     }
     guardar(chave(`treino:${fichaAtual.id}`), { itens, ultimas });
   } else {
@@ -243,18 +247,27 @@ function lerCargaDoCartao(card) {
 
 async function salvarCampos(item, campos) {
   const dia = hoje();
-  estadoHoje[item.id] = { ...estadoHoje[item.id], ...campos };
+  const antes = estadoHoje[item.id];
+  estadoHoje[item.id] = { ...antes, ...campos };
   guardar(chave(`hoje:${fichaAtual.id}:${dia}`), estadoHoje);
-  const resultado = await gravarExecucao({
-    aluno_id: ctx.user.id,
-    ficha_id: fichaAtual.id,
-    data: dia,
-    ficha_item_id: item.id,
-    exercicio_id: item.exercicio_id,
-    campos,
-  });
-  atualizarStatus();
-  return resultado;
+  try {
+    const resultado = await gravarExecucao({
+      aluno_id: ctx.user.id,
+      ficha_id: fichaAtual.id,
+      data: dia,
+      ficha_item_id: item.id,
+      exercicio_id: item.exercicio_id,
+      campos,
+    });
+    atualizarStatus();
+    return resultado;
+  } catch (erro) {
+    if (antes === undefined) delete estadoHoje[item.id];
+    else estadoHoje[item.id] = antes;
+    guardar(chave(`hoje:${fichaAtual.id}:${dia}`), estadoHoje);
+    atualizarStatus();
+    throw erro;
+  }
 }
 
 function cartao(item) {
@@ -267,27 +280,55 @@ function cartao(item) {
     style: { borderLeftColor: CORES[ex.grupo] || '#ffcc00' },
   });
 
+  const temHoje = estado.carga !== null && estado.carga !== undefined;
+  const sugerida = !temHoje && anterior ? anterior.carga : null; // sugere a carga da última vez
+  let pedido = temHoje ? estado.carga : null; // último valor já enviado para gravar
+
   const entrada = h('input', {
     class: 'input-carga',
     type: 'text',
     inputmode: 'decimal',
+    enterkeyhint: 'done',
     placeholder: 'kg',
     'aria-label': `Carga em kg para ${ex.nome}`,
-    value: formatarCarga(estado.carga),
+    value: formatarCarga(temHoje ? estado.carga : sugerida),
   });
+  if (sugerida !== null) entrada.classList.add('sugerida');
+  const status = h('span', { class: 'sutil carga-status' }, temHoje ? '✓ salvo' : (sugerida !== null ? 'sugerida' : ''));
   const botaoSalvar = h('button', { type: 'button', class: 'btn-acao-mini' }, 'Salvar');
-  async function salvarCarga() {
+
+  async function salvarCarga(manual) {
     const c = lerCargaDoCartao(card);
-    if (!c.ok) return toast('Carga inválida. Use só números, ex.: 22,5', 'erro');
+    if (!c.ok) {
+      status.textContent = '⚠ valor inválido';
+      return toast('Carga inválida. Use só números, ex.: 22,5', 'erro');
+    }
+    if (c.valor === null) return; // campo vazio: nada a salvar
+    const ehSugestao = entrada.classList.contains('sugerida');
+    if (c.valor === pedido && !ehSugestao) {
+      if (manual) toast('Essa carga já está salva.', 'info');
+      return;
+    }
+    const pedidoAnterior = pedido;
+    pedido = c.valor;
+    status.textContent = 'salvando…';
     try {
       const r = await salvarCampos(item, { carga: c.valor });
-      toast(r === 'fila' ? 'Salvo no aparelho. Envia quando voltar a internet.' : 'Carga salva.', r === 'fila' ? 'info' : 'ok');
-    } catch {
-      toast('Não foi possível salvar a carga.', 'erro');
+      entrada.classList.remove('sugerida');
+      status.textContent = r === 'fila' ? '⏳ no aparelho' : '✓ salvo';
+      if (r === 'fila') toast('Sem internet: salvo no aparelho e será enviado depois.', 'info');
+      else if (manual) toast('Carga salva.', 'ok');
+    } catch (erro) {
+      pedido = pedidoAnterior;
+      status.textContent = '⚠ não salvou';
+      toast(`Não foi possível salvar a carga: ${erro.message || erro}`, 'erro');
     }
   }
-  botaoSalvar.addEventListener('click', salvarCarga);
-  entrada.addEventListener('keydown', (e) => { if (e.key === 'Enter') salvarCarga(); });
+  botaoSalvar.addEventListener('click', () => salvarCarga(true));
+  // Salva ao sair do campo ("change" só dispara se o valor foi editado). Enter apenas tira o foco.
+  entrada.addEventListener('change', () => { if (!entrada.classList.contains('sugerida')) salvarCarga(false); });
+  entrada.addEventListener('input', () => { entrada.classList.remove('sugerida'); status.textContent = ''; });
+  entrada.addEventListener('keydown', (e) => { if (e.key === 'Enter') entrada.blur(); });
 
   const botaoCheck = h('button', {
     type: 'button',
@@ -301,14 +342,20 @@ function cartao(item) {
     botaoCheck.setAttribute('aria-pressed', String(novo));
     const campos = { feito: novo };
     const c = lerCargaDoCartao(card);
-    if (novo && c.ok && c.valor !== null) campos.carga = c.valor;
+    if (novo && c.ok && c.valor !== null) campos.carga = c.valor; // confirma a carga do campo (digitada ou sugerida)
     if (novo) setTimeout(() => lista.append(card), 350);
     try {
-      await salvarCampos(item, campos);
-    } catch {
+      const r = await salvarCampos(item, campos);
+      if (campos.carga !== undefined) {
+        pedido = campos.carga;
+        entrada.classList.remove('sugerida');
+        status.textContent = r === 'fila' ? '⏳ no aparelho' : '✓ salvo';
+      }
+      if (r === 'fila') toast('Sem internet: salvo no aparelho e será enviado depois.', 'info');
+    } catch (erro) {
       card.classList.toggle('feito', !novo);
       botaoCheck.setAttribute('aria-pressed', String(!novo));
-      toast('Não foi possível registrar.', 'erro');
+      toast(`Não foi possível registrar: ${erro.message || erro}`, 'erro');
     }
   });
 
@@ -345,7 +392,7 @@ function cartao(item) {
         h('h3', {}, ex.nome),
         h('p', { class: 'sutil' }, `${item.series}x${item.reps} · ${ex.grupo}`),
         anterior ? h('p', { class: 'ultima-carga' }, `Última vez: ${formatarCarga(anterior.carga)} kg (${formatarDiaMes(anterior.data)})`) : null,
-        h('div', { class: 'linha-carga' }, entrada, botaoSalvar),
+        h('div', { class: 'linha-carga' }, entrada, botaoSalvar, status),
         botaoTimer,
       ),
       acoes,
