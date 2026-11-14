@@ -25,3 +25,7 @@
 .foto-status { min-height: 1.2em; font-size: 0.85rem; text-align: center; color: var(--sutil, #9a9a9a); }
 .foto-status[data-tipo="ok"] { color: var(--ok, #2ecc71); }
 .foto-status[data-tipo="erro"] { color: var(--erro, #ff4444); }
+
+/* Carga sugerida (a da última vez) e indicador de salvamento */
+.input-carga.sugerida { opacity: 0.55; font-style: italic; }
+.carga-status { font-size: 0.75rem; white-space: nowrap; }
