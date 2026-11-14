@@ -4,7 +4,7 @@
 // - Chamadas ao Supabase (dados): nunca passam pelo cache. O app guarda o que precisa por conta própria.
 //
 // IMPORTANTE: a cada publicação nova, aumente o número em VERSAO para limpar o cache antigo.
-const VERSAO = 'v4-foto-ampliada';
+const VERSAO = 'v5-cargas';
 const CACHE = `treino-do-dia-${VERSAO}`;
 
 const ARQUIVOS = [
