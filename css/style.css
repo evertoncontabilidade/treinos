@@ -243,6 +243,19 @@ button:not(:disabled):hover { opacity: 0.85; }
 .registro-valores { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; margin: 10px 0; font-size: 0.9rem; }
 .registro-valores .delta { display: block; color: var(--sutil); font-size: 0.75rem; }
 .registro-acoes { display: flex; gap: 8px; }
+.dados-corpo { margin-top: 14px; }
+.dados-corpo > summary {
+    cursor: pointer; list-style: none; background: var(--painel); border: 1px solid var(--borda);
+    border-radius: 12px; padding: 12px 16px; font-weight: 700;
+}
+.dados-corpo > summary::-webkit-details-marker { display: none; }
+.dados-corpo > summary small { display: block; font-weight: 400; margin-top: 2px; }
+.dados-corpo[open] > summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.dados-corpo > .caixa { border-top-left-radius: 0; border-top-right-radius: 0; }
+.como-medir p { font-size: 0.9rem; }
+.gordura-auto { background: var(--painel-2); border-radius: 10px; padding: 12px 14px; font-size: 0.9rem; }
+.gordura-auto p + p { margin-top: 8px; }
+.gordura-auto strong { color: var(--destaque); font-size: 1.2rem; }
 .grafico { background: var(--painel); border-radius: 12px; padding: 10px; margin-top: 10px; }
 .grafico svg { width: 100%; height: auto; display: block; }
 .grafico .linha { fill: none; stroke: var(--destaque); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
