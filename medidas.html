@@ -21,7 +21,27 @@
             <a class="btn-mini voltar" href="aluno.html">← Voltar</a>
             <h1>Minhas medidas</h1>
         </header>
-        <p class="sutil">Anote uma vez por semana, de preferência no mesmo dia e no mesmo horário. Preencha só o que quiser medir. Só você vê estes dados.</p>
+        <p class="sutil">Anote uma vez por semana, de preferência no mesmo dia e no mesmo horário. Preencha só o que quiser medir. O IMC e a gordura corporal são calculados sozinhos. Só você vê estes dados.</p>
+
+        <details id="dados-corpo" class="dados-corpo">
+            <summary>Dados para calcular a gordura corporal <small id="resumo-corpo" class="sutil"></small></summary>
+            <form id="form-corpo" class="caixa">
+                <p class="sutil">Usados só na fórmula da Marinha dos EUA. Você informa uma vez e pode mudar quando quiser.</p>
+                <label class="campo">
+                    <span>Fórmula a usar</span>
+                    <select name="formula">
+                        <option value="">Escolha…</option>
+                        <option value="masculina">Masculina</option>
+                        <option value="feminina">Feminina</option>
+                    </select>
+                </label>
+                <label class="campo">
+                    <span>Altura (cm)</span>
+                    <input name="altura" type="text" inputmode="decimal" autocomplete="off" placeholder="ex.: 175">
+                </label>
+                <button id="btn-salvar-corpo" type="submit" class="btn-principal">Salvar dados</button>
+            </form>
+        </details>
 
         <form id="form-medidas" class="caixa" style="margin-top:14px">
             <label class="campo">
@@ -29,9 +49,27 @@
                 <input id="m-data" type="date" required>
             </label>
             <div id="campos-medidas" class="grade-medidas"></div>
+            <div class="gordura-auto" role="status">
+                <p id="imc-auto"></p>
+                <p id="gordura-auto"></p>
+            </div>
             <p id="aviso-edicao" class="sutil" hidden>Já existe um registro nesta data: salvar vai atualizá-lo.</p>
             <button id="btn-salvar-medidas" type="submit" class="btn-principal">Salvar medidas</button>
         </form>
+
+        <details class="dados-corpo">
+            <summary>Como medir (e o que esperar do resultado)</summary>
+            <div class="caixa como-medir">
+                <p><strong>Pescoço:</strong> logo abaixo do gogó, com a fita levemente inclinada para baixo na frente. Não estufe o pescoço.</p>
+                <p><strong>Abdômen (fórmula masculina):</strong> na altura do umbigo, fita na horizontal, sem apertar.</p>
+                <p><strong>Cintura (fórmula feminina):</strong> no ponto mais estreito do tronco. Se não houver parte mais estreita, use a altura do umbigo.</p>
+                <p><strong>Quadril (fórmula feminina):</strong> na parte mais larga, passando pelos glúteos.</p>
+                <p><strong>Altura:</strong> em pé, sem calçado.</p>
+                <p><strong>IMC:</strong> é o peso dividido pela altura ao quadrado, com as faixas da OMS para adultos. Ele não separa músculo de gordura: quem treina com peso pode ter IMC alto com pouca gordura. Olhe junto com a gordura estimada e as medidas.</p>
+                <p class="sutil">Meça relaxado, depois de soltar o ar, e repita 2 ou 3 vezes tirando a média. Faça sempre no mesmo dia e horário.</p>
+                <p class="sutil">O método da Marinha é uma <strong>estimativa</strong>: a margem de erro costuma ser de alguns pontos percentuais e varia com o tipo de corpo. Acompanhe a <strong>tendência semana a semana</strong>, não o número isolado. Não substitui avaliação profissional.</p>
+            </div>
+        </details>
 
         <h2 class="secao">Evolução</h2>
         <label class="campo">
