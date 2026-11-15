@@ -2,7 +2,9 @@
 
 export const CAMPOS = [
   { id: 'peso_kg', nome: 'Peso', unidade: 'kg', min: 20, max: 400, casas: 2 },
-  { id: 'gordura_pct', nome: 'Gordura corporal', unidade: '%', min: 2, max: 70, casas: 1 },
+  { id: 'imc', nome: 'IMC', unidade: 'kg/m²', min: 5, max: 90, casas: 1, calculado: true, derivado: true },
+  { id: 'gordura_pct', nome: 'Gordura corporal', unidade: '%', min: 2, max: 70, casas: 1, calculado: true, estimado: true },
+  { id: 'pescoco_cm', nome: 'Pescoço', unidade: 'cm', min: 10, max: 300, casas: 1 },
   { id: 'peito_cm', nome: 'Peito / busto', unidade: 'cm', min: 10, max: 300, casas: 1 },
   { id: 'cintura_cm', nome: 'Cintura', unidade: 'cm', min: 10, max: 300, casas: 1 },
   { id: 'abdomen_cm', nome: 'Abdômen', unidade: 'cm', min: 10, max: 300, casas: 1 },
@@ -14,6 +16,10 @@ export const CAMPOS = [
   { id: 'panturrilha_d_cm', nome: 'Panturrilha direita', unidade: 'cm', min: 10, max: 300, casas: 1 },
   { id: 'panturrilha_e_cm', nome: 'Panturrilha esquerda', unidade: 'cm', min: 10, max: 300, casas: 1 },
 ];
+
+// Campos que a pessoa digita (a gordura corporal é calculada, não digitada).
+export const CAMPOS_FORM = CAMPOS.filter((c) => !c.calculado);
+export const CAMPO_ALTURA = { min: 100, max: 250, casas: 1 };
 
 export const rotulo = (c) => `${c.nome} (${c.unidade})`;
 
@@ -75,4 +81,67 @@ export function geometriaGrafico(valores, { largura = 320, altura = 150, margem 
   }));
   const caminho = pontos.map((p, i) => `${i ? 'L' : 'M'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
   return { pontos, caminho, min, max, largura, altura, margem };
+}
+
+/**
+ * Gordura corporal estimada pelo método da Marinha dos EUA (medidas em cm).
+ *  - fórmula 'masculina': usa altura, pescoço e abdômen (na altura do umbigo)
+ *  - fórmula 'feminina':  usa altura, pescoço, cintura (parte mais estreita) e quadril
+ * Devolve { ok: true, valor } ou { ok: false, faltando: [...], erro? }.
+ */
+export function calcularGorduraMarinha({ formula, alturaCm, pescocoCm, cinturaCm, abdomenCm, quadrilCm }) {
+  const tem = (v) => typeof v === 'number' && Number.isFinite(v) && v > 0;
+  const faltando = [];
+  if (formula !== 'masculina' && formula !== 'feminina') faltando.push('fórmula');
+  if (!tem(alturaCm)) faltando.push('altura');
+  if (!tem(pescocoCm)) faltando.push('pescoço');
+  if (formula === 'masculina' && !tem(abdomenCm)) faltando.push('abdômen');
+  if (formula === 'feminina') {
+    if (!tem(cinturaCm)) faltando.push('cintura');
+    if (!tem(quadrilCm)) faltando.push('quadril');
+  }
+  if (faltando.length) return { ok: false, faltando };
+
+  let densidade;
+  if (formula === 'masculina') {
+    const diferenca = abdomenCm - pescocoCm;
+    if (diferenca <= 0) return { ok: false, faltando: [], erro: 'O abdômen precisa ser maior que o pescoço. Confira as medidas.' };
+    densidade = 1.0324 - 0.19077 * Math.log10(diferenca) + 0.15456 * Math.log10(alturaCm);
+  } else {
+    const soma = cinturaCm + quadrilCm - pescocoCm;
+    if (soma <= 0) return { ok: false, faltando: [], erro: 'Cintura + quadril precisam ser maiores que o pescoço. Confira as medidas.' };
+    densidade = 1.29579 - 0.35004 * Math.log10(soma) + 0.221 * Math.log10(alturaCm);
+  }
+  const percentual = 495 / densidade - 450;
+  if (!Number.isFinite(percentual) || percentual < 2 || percentual > 70) {
+    return { ok: false, faltando: [], erro: 'O resultado ficou fora do esperado. Confira as medidas.' };
+  }
+  return { ok: true, valor: Math.round(percentual * 10) / 10 };
+}
+
+/** ['a','b','c'] -> 'a, b e c' */
+export function listar(itens) {
+  if (itens.length <= 1) return itens.join('');
+  return `${itens.slice(0, -1).join(', ')} e ${itens[itens.length - 1]}`;
+}
+
+/** IMC = peso (kg) ÷ altura (m) ao quadrado. Devolve null se faltar dado ou o resultado for absurdo. */
+export function calcularImc(pesoKg, alturaCm) {
+  const peso = Number(pesoKg);
+  const altura = Number(alturaCm);
+  if (!(peso > 0) || !(altura > 0)) return null;
+  const metros = altura / 100;
+  const imc = peso / (metros * metros);
+  if (!Number.isFinite(imc) || imc < 8 || imc > 90) return null;
+  return Math.round(imc * 10) / 10;
+}
+
+/** Faixas da OMS para adultos. */
+export function classificarImc(imc) {
+  if (imc < 18.5) return 'Abaixo do peso';
+  if (imc < 25) return 'Peso normal';
+  if (imc < 30) return 'Sobrepeso';
+  if (imc < 35) return 'Obesidade grau I';
+  if (imc < 40) return 'Obesidade grau II';
+  return 'Obesidade grau III';
 }
